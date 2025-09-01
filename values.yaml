@@ -1,0 +1,53 @@
+# LiteLLM Helm Chart Values
+# Configure your LiteLLM deployment here
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/berriai/litellm
+  tag: main-stable
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP  # Changed to ClusterIP for Ingress usage
+  port: 4000
+  # nodePort: 30400  # Uncomment and change type to NodePort if not using Ingress
+  annotations: {}
+
+proxy_config:
+  model_list: []
+
+# Resources
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"  # MicroK8s uses nginx ingress by default
+  annotations: 
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    # nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  hosts:
+    - host: litellm.home.arpa  # Resolved by home DNS
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []  # Optional: Configure TLS/SSL here
+
+# Auto-scaling (optional)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+# Environment variables
+envVars:
+  STORE_MODEL_IN_DB: "true"
+
