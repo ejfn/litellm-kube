@@ -25,8 +25,8 @@ the name referenced in `values.yaml` (default: `litellm-provider-keys`).
 
 ```bash
 kubectl create secret generic litellm-provider-keys -n litellm \
-  --from-literal=OPENAI_API_KEY="sk-your-openai-key" \
   --from-literal=ANTHROPIC_API_KEY="sk-ant-your-anthropic-key" \
+  --from-literal=OPENAI_API_KEY="sk-your-openai-key" \
   --from-literal=GOOGLE_API_KEY="your-google-api-key" \
   --from-literal=OPENROUTER_API_KEY="sk-or-your-openrouter-key"
 ```
@@ -75,14 +75,16 @@ Then Claude Code will automatically route Anthropic requests through your LiteLL
 - Use the slash command inside a chat session:
 
 ```
-/model grok-code-fast-1
+/model claude-3-5-sonnet-20241022    # Uses claude-* wildcard pattern
+/model gpt-4o                        # Uses gpt-* wildcard pattern  
+/model gemini-2.0-flash-exp          # Uses gemini-* wildcard pattern
+/model x-ai/grok-beta                # Uses "*" wildcard for OpenRouter
+/model deepseek/deepseek-r1          # Uses "*" wildcard for OpenRouter
 ```
 
-- Alternatively, start Claude Code with a model flag:
+- Alternatively, start Claude Code with a model flag `claude --model <model-id>`
 
-```bash
-claude --model grok-code-fast-1
-```
+**Note**: The wildcard patterns (`claude-*`, `gpt-*`, `gemini-*`, and `"*"` for OpenRouter models) allow access to any model from these providers without needing to pre-configure each specific model.
 
 
 
