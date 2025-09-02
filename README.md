@@ -1,12 +1,20 @@
 # LiteLLM Kubernetes Deployment
 
+This deployment uses the official [LiteLLM Helm Chart](https://github.com/BerriAI/litellm/tree/main/deploy/charts/litellm-helm) with a NodePort service for external access.
+
 ## Deploy
 
 ```bash
 kubectl create namespace litellm
 
+# Deploy LiteLLM using Helm
 helm upgrade --install -n litellm litellm oci://ghcr.io/berriai/litellm-helm -f values.yaml
+
+# Deploy NodePort service for external access on port 30400
+kubectl apply -f litellm-nodeport.yaml -n litellm
 ```
+
+**Note**: This setup uses NodePort for local access. If you prefer ingress (for production or custom domain setup), you can enable ingress in `values.yaml` instead of using the NodePort service.
 
 ## Provider API keys (Helm / Kubernetes secret)
 
@@ -45,7 +53,7 @@ Your setup uses:
 ## Post-Deployment Setup
 
 1. **Create provider API keys secret**: Use the kubectl command in the "Provider API keys" section below
-2. **Access the LiteLLM Dashboard**: http://litellm.home.arpa  
+2. **Access the LiteLLM Dashboard**: http://localhost:30400/ui/
 3. **Login with master key**: Use the auto-generated master key as authentication
 4. **Models are pre-configured**: Wildcard entries in values.yaml support all major model variants
 5. **Create API Keys**: Generate multiple API keys for different users/applications through the UI
@@ -55,7 +63,7 @@ Your setup uses:
 Set environment variables to use LiteLLM as Anthropic proxy:
 
 ```bash
-export ANTHROPIC_BASE_URL="http://litellm.home.arpa"
+export ANTHROPIC_BASE_URL="http://localhost:30400"
 # Use an API key created through the LiteLLM dashboard (not the master key):
 export ANTHROPIC_AUTH_TOKEN="sk-your-generated-api-key"
 ```
@@ -67,18 +75,19 @@ Then Claude Code will automatically route Anthropic requests through your LiteLL
 - Use the slash command inside a chat session:
 
 ```
-/model claude-sonnet-4-20250514
+/model grok-code-fast-1
 ```
 
 - Alternatively, start Claude Code with a model flag:
 
 ```bash
-claude --model claude-sonnet-4-20250514
+claude --model grok-code-fast-1
 ```
 
-**Note**: Create API keys through the LiteLLM UI at http://litellm.home.arpa using the master key for authentication.
+
 
 ## Documentation
 
 - [LiteLLM Docs](https://docs.litellm.ai/)
 - [LiteLLM Proxy Configuration](https://docs.litellm.ai/docs/proxy/configs)
+- [Official LiteLLM Helm Chart](https://github.com/BerriAI/litellm/tree/main/deploy/charts/litellm-helm)
