@@ -15,7 +15,36 @@ service:
   annotations: {}
 
 proxy_config:
-  model_list: []
+  # A list of models to preload into the LiteLLM proxy. Each entry should
+  # use model_name and litellm_params format as documented at:
+  # https://docs.litellm.ai/docs/proxy/configs
+  model_list:
+    - model_name: gpt-*
+      litellm_params:
+        model: openai/gpt-*
+        api_key: os.environ/OPENAI_API_KEY
+        drop_params: true
+    - model_name: claude-*
+      litellm_params:
+        model: anthropic/claude-*
+        api_key: os.environ/ANTHROPIC_API_KEY
+        drop_params: true
+    - model_name: gemini-*
+      litellm_params:
+        model: gemini/gemini-*
+        api_key: os.environ/GOOGLE_API_KEY
+        drop_params: true
+    - model_name: openrouter/*
+      litellm_params:
+        model: openrouter/*
+        api_key: os.environ/OPENROUTER_API_KEY
+        drop_params: true
+
+# A list of Kubernetes Secret objects that will be exported to the LiteLLM proxy
+#  pod as environment variables.  These secrets can then be referenced in the
+#  configuration file (or "litellm" ConfigMap) with `os.environ/<Env Var Name>`
+environmentSecrets:
+  - litellm-provider-keys
 
 # Resources
 resources:
@@ -46,8 +75,3 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 80
-
-# Environment variables
-envVars:
-  STORE_MODEL_IN_DB: "true"
-

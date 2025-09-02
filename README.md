@@ -8,6 +8,25 @@ kubectl create namespace litellm
 helm upgrade --install -n litellm litellm oci://ghcr.io/berriai/litellm-helm -f values.yaml
 ```
 
+## Provider API keys (Helm / Kubernetes secret)
+
+Create a Kubernetes secret containing your providers' API keys and give it
+the name referenced in `values.yaml` (default: `litellm-provider-keys`).
+
+**Recommended method** (keeps keys out of git):
+
+```bash
+kubectl create secret generic litellm-provider-keys -n litellm \
+  --from-literal=OPENAI_API_KEY="sk-your-openai-key" \
+  --from-literal=ANTHROPIC_API_KEY="sk-ant-your-anthropic-key" \
+  --from-literal=GOOGLE_API_KEY="your-google-api-key" \
+  --from-literal=OPENROUTER_API_KEY="sk-or-your-openrouter-key"
+```
+
+Replace the example keys above with your actual API keys from each provider.
+
+Then ensure `values.yaml` points to that secret via `environmentSecrets` and the model configurations reference them with `os.environ/API_KEY_NAME`.
+
 ## Get Master Key
 
 ```bash
@@ -32,17 +51,17 @@ curl http://litellm.home.arpa/chat/completions \
 
 Your setup uses:
 - **Auto-generated master key** (stored in Kubernetes secret)
-- **Database storage** for models and API keys (`STORE_MODEL_IN_DB=true`)
-- **No model configuration in values.yaml** (all managed via dashboard)
-- **No secrets.yaml needed** (API keys managed in database)
+- **Model configuration in values.yaml**
+- **Provider API keys in Kubernetes secret** (referenced via `environmentSecrets`)
+- **Wildcard model support** (gpt-*, claude-*, gemini-*)
 
 ## Post-Deployment Setup
 
-1. **Access the LiteLLM Dashboard**: http://litellm.home.arpa
-2. **Login with master key**: Use the auto-generated master key as authentication
-3. **Add Models**: Configure your LLM providers (OpenAI, Anthropic, Google, etc.) through the UI
-4. **Create API Keys**: Generate multiple API keys for different users/applications
-5. **Manage Everything**: All configuration is done through the web interface
+1. **Create provider API keys secret**: Use the kubectl command in the "Provider API keys" section below
+2. **Access the LiteLLM Dashboard**: http://litellm.home.arpa  
+3. **Login with master key**: Use the auto-generated master key as authentication
+4. **Models are pre-configured**: Wildcard entries in values.yaml support all major model variants
+5. **Create API Keys**: Generate multiple API keys for different users/applications through the UI
 
 ## Notes
 
