@@ -9,37 +9,99 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  type: ClusterIP  # Changed to ClusterIP for Ingress usage
+  type: ClusterIP
   port: 4000
-  # nodePort: 30400  # Uncomment and change type to NodePort if not using Ingress
-  annotations: {}
+
+# Simple ingress for hostname routing
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"  # No HTTPS redirect
+    nginx.ingress.kubernetes.io/use-forwarded-headers: "true"  # Trust forwarded headers
+  hosts:
+    - host: litellm.home.arpa
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
 
 proxy_config:
   # A list of models to preload into the LiteLLM proxy. Each entry should
   # use model_name and litellm_params format as documented at:
   # https://docs.litellm.ai/docs/proxy/configs
   model_list:
-    - model_name: gpt-*
+    # OpenAI Models
+    - model_name: gpt-5
       litellm_params:
-        model: openai/gpt-*
+        model: openai/gpt-5
         api_key: os.environ/OPENAI_API_KEY
         drop_params: true
-    - model_name: claude-*
+    # Anthropic Models
+    - model_name: claude-sonnet-4-20250514
       litellm_params:
-        model: anthropic/claude-*
+        model: anthropic/claude-sonnet-4-20250514
         api_key: os.environ/ANTHROPIC_API_KEY
         drop_params: true
-    - model_name: gemini-*
+    - model_name: claude-opus-4-1-20250805
       litellm_params:
-        model: gemini/gemini-*
+        model: anthropic/claude-opus-4-1-20250805
+        api_key: os.environ/ANTHROPIC_API_KEY
+        drop_params: true
+    # Google Gemini Models
+    - model_name: gemini-2.5-pro
+      litellm_params:
+        model: gemini/gemini-2.5-pro
         api_key: os.environ/GOOGLE_API_KEY
         drop_params: true
+    - model_name: gemini-2.5-flash
+      litellm_params:
+        model: gemini/gemini-2.5-flash
+        api_key: os.environ/GOOGLE_API_KEY
+        drop_params: true
+    # OpenRouter Models - xAI models
+    - model_name: grok-code-fast-1
+      litellm_params:
+        model: openrouter/x-ai/grok-code-fast-1
+        api_key: os.environ/OPENROUTER_API_KEY
+        drop_params: true
+      model_info:
+        input_cost_per_token: 0.0000002
+        output_cost_per_token: 0.0000015
+    - model_name: grok-4
+      litellm_params:
+        model: openrouter/x-ai/grok-4
+        api_key: os.environ/OPENROUTER_API_KEY
+        drop_params: true
+    # OpenRouter Models - Chinese models
+    - model_name: deepseek-chat-v3.1
+      litellm_params:
+        model: openrouter/deepseek/deepseek-chat-v3.1
+        api_key: os.environ/OPENROUTER_API_KEY
+        drop_params: true
+    - model_name: kimi-k2
+      litellm_params:
+        model: openrouter/moonshotai/kimi-k2
+        api_key: os.environ/OPENROUTER_API_KEY
+        drop_params: true
+      model_info:
+        input_cost_per_token: 0.00000014
+        output_cost_per_token: 0.00000249      
+    - model_name: qwen3-30b-a3b-thinking-2507
+      litellm_params:
+        model: openrouter/qwen/qwen3-30b-a3b-thinking-2507
+        api_key: os.environ/OPENROUTER_API_KEY
+        drop_params: true
+      model_info:
+        input_cost_per_token: 0.000000071
+        output_cost_per_token: 0.000000285            
+    # Wildcard to access any OpenRouter model
     - model_name: openrouter/*
       litellm_params:
         model: openrouter/*
         api_key: os.environ/OPENROUTER_API_KEY
         drop_params: true
-
+        
 # A list of Kubernetes Secret objects that will be exported to the LiteLLM proxy
 #  pod as environment variables.  These secrets can then be referenced in the
 #  configuration file (or "litellm" ConfigMap) with `os.environ/<Env Var Name>`
@@ -54,20 +116,6 @@ resources:
   requests:
     cpu: 250m
     memory: 256Mi
-
-# Ingress configuration
-ingress:
-  enabled: true
-  className: "nginx"  # MicroK8s uses nginx ingress by default
-  annotations: 
-    # nginx.ingress.kubernetes.io/rewrite-target: /
-    # nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-  hosts:
-    - host: litellm.home.arpa  # Resolved by home DNS
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []  # Optional: Configure TLS/SSL here
 
 # Auto-scaling (optional)
 autoscaling:

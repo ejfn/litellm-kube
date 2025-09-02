@@ -34,19 +34,6 @@ Then ensure `values.yaml` points to that secret via `environmentSecrets` and the
 kubectl get secret litellm-masterkey -n litellm -o jsonpath='{.data.masterkey}' | base64 -d
 ```
 
-## Access
-
-```bash
-# Via ingress (from any computer on your network)
-curl http://litellm.home.arpa/health
-
-# API test (replace sk-9qGOzIoL10AFNiOtAj with your actual master key)
-curl http://litellm.home.arpa/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sk-9qGOzIoL10AFNiOtAj" \
-  -d '{"model": "gpt-4", "messages": [{"role": "user", "content": "Hello!"}]}'
-```
-
 ## Configuration
 
 Your setup uses:
@@ -63,12 +50,6 @@ Your setup uses:
 4. **Models are pre-configured**: Wildcard entries in values.yaml support all major model variants
 5. **Create API Keys**: Generate multiple API keys for different users/applications through the UI
 
-## Notes
-
-- Ingress uses `litellm.home.arpa` (resolved by home DNS)
-- Service runs on ClusterIP with nginx ingress
-- For NodePort access, change service type and disable ingress in values.yaml
-
 ## Use with Claude Code
 
 Set environment variables to use LiteLLM as Anthropic proxy:
@@ -80,6 +61,20 @@ export ANTHROPIC_AUTH_TOKEN="sk-your-generated-api-key"
 ```
 
 Then Claude Code will automatically route Anthropic requests through your LiteLLM proxy.
+
+### Select the model
+
+- Use the slash command inside a chat session:
+
+```
+/model claude-sonnet-4-20250514
+```
+
+- Alternatively, start Claude Code with a model flag:
+
+```bash
+claude --model claude-sonnet-4-20250514
+```
 
 **Note**: Create API keys through the LiteLLM UI at http://litellm.home.arpa using the master key for authentication.
 
