@@ -39,11 +39,14 @@ proxy_config:
         api_key: os.environ/GOOGLE_API_KEY
         drop_params: true
     # Wildcard to access any OpenRouter model
-    - model_name: "*"
+    - model_name: openrouter/*
       litellm_params:
         model: openrouter/*
         api_key: os.environ/OPENROUTER_API_KEY
         drop_params: true
+
+  litellm_settings:
+    check_provider_endpoint: true # Enable checking provider endpoint for wildcard models        
         
 # A list of Kubernetes Secret objects that will be exported to the LiteLLM proxy
 #  pod as environment variables.  These secrets can then be referenced in the

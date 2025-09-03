@@ -75,11 +75,11 @@ Then Claude Code will automatically route Anthropic requests through your LiteLL
 - Use the slash command inside a chat session:
 
 ```
-/model claude-3-5-sonnet-20241022    # Uses claude-* wildcard pattern
-/model gpt-4o                        # Uses gpt-* wildcard pattern  
-/model gemini-2.0-flash-exp          # Uses gemini-* wildcard pattern
-/model x-ai/grok-beta                # Uses "*" wildcard for OpenRouter
-/model deepseek/deepseek-r1          # Uses "*" wildcard for OpenRouter
+/model claude-3-5-sonnet-20241022               # Uses claude-* wildcard pattern
+/model gpt-4o                                   # Uses gpt-* wildcard pattern  
+/model gemini-2.0-flash-exp                     # Uses gemini-* wildcard pattern
+/model openrouter/x-ai/grok-beta                # Uses openrouter/* wildcard for OpenRouter
+/model openrouter/deepseek/deepseek-r1          # Uses openrouter/* wildcard for OpenRouter
 ```
 
 - Alternatively, start Claude Code with a model flag `claude --model <model-id>`
