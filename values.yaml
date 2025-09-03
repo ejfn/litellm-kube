@@ -26,6 +26,12 @@ proxy_config:
         model: anthropic/claude-*
         api_key: os.environ/ANTHROPIC_API_KEY
         drop_params: true
+    # Anthropic Models
+    - model_name: anthropic/*
+      litellm_params:
+        model: anthropic/*
+        api_key: os.environ/ANTHROPIC_API_KEY
+        drop_params: true
     # OpenAI Models
     - model_name: openapi/*
       litellm_params:
