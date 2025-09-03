@@ -27,38 +27,17 @@ proxy_config:
         api_key: os.environ/ANTHROPIC_API_KEY
         drop_params: true
     # OpenAI Models
-    - model_name: gpt-5
+    - model_name: openapi/*
       litellm_params:
-        model: openai/gpt-5
+        model: openai/*
         api_key: os.environ/OPENAI_API_KEY
-        drop_params: true        
-    - model_name: gpt-5-mini
-      litellm_params:
-        model: openai/gpt-5-mini
-        api_key: os.environ/OPENAI_API_KEY
-        drop_params: true             
+        drop_params: true
     # Google Gemini Models
-    - model_name: gemini-2.5-pro
+    - model_name: gemini/*
       litellm_params:
-        model: gemini/gemini-2.5-pro
-        api_key: os.environ/GOOGLE_API_KEY
-        drop_params: true    
-    - model_name: gemini-2.5-flash
-      litellm_params:
-        model: gemini/gemini-2.5-flash
+        model: gemini/*
         api_key: os.environ/GOOGLE_API_KEY
         drop_params: true
-    # x-AI Models
-    - model_name: grok-4
-      litellm_params:
-        model: openrouter/x-ai/grok-4
-        api_key: os.environ/OPENROUTER_API_KEY
-        drop_params: true    
-    - model_name: grok-code-fast-1
-      litellm_params:
-        model: openrouter/x-ai/grok-code-fast-1
-        api_key: os.environ/OPENROUTER_API_KEY
-        drop_params: true        
     # Wildcard to access any OpenRouter model
     - model_name: openrouter/*
       litellm_params:
