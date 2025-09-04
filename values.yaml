@@ -25,34 +25,30 @@ proxy_config:
       litellm_params:
         model: anthropic/claude-*
         api_key: os.environ/ANTHROPIC_API_KEY
-        drop_params: true
     # Anthropic Models
     - model_name: anthropic/*
       litellm_params:
         model: anthropic/*
         api_key: os.environ/ANTHROPIC_API_KEY
-        drop_params: true
     # OpenAI Models
     - model_name: openapi/*
       litellm_params:
         model: openai/*
         api_key: os.environ/OPENAI_API_KEY
-        drop_params: true
     # Google Gemini Models
     - model_name: gemini/*
       litellm_params:
         model: gemini/*
         api_key: os.environ/GOOGLE_API_KEY
-        drop_params: true
     # Wildcard to access any OpenRouter model
     - model_name: openrouter/*
       litellm_params:
         model: openrouter/*
         api_key: os.environ/OPENROUTER_API_KEY
-        drop_params: true
 
   litellm_settings:
-    check_provider_endpoint: true # Enable checking provider endpoint for wildcard models        
+    check_provider_endpoint: true # Enable checking provider endpoint for wildcard models
+    drop_params: true
         
 # A list of Kubernetes Secret objects that will be exported to the LiteLLM proxy
 #  pod as environment variables.  These secrets can then be referenced in the
