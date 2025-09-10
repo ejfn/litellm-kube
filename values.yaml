@@ -31,7 +31,7 @@ proxy_config:
         model: anthropic/*
         api_key: os.environ/ANTHROPIC_API_KEY
     # OpenAI Models
-    - model_name: openapi/*
+    - model_name: openai/*
       litellm_params:
         model: openai/*
         api_key: os.environ/OPENAI_API_KEY
