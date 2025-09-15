@@ -1,0 +1,55 @@
+# LiteLLM Helm Chart Values
+# Configure your LiteLLM deployment here
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/berriai/litellm
+  tag: main-stable
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 4000
+
+ingress:
+  enabled: false
+
+proxy_config:
+  # A list of models to preload into the LiteLLM proxy. Each entry should
+  # use model_name and litellm_params format as documented at:
+  # https://docs.litellm.ai/docs/proxy/configs
+  model_list: []
+
+  litellm_settings:
+    drop_params: true
+
+extraEnvVars:
+  - name: STORE_MODEL_IN_DB 
+    value: "true"
+
+db:
+  deployStandalone: false
+  useExisting: true
+  endpoint: postgresql.postgresql.svc.cluster.local
+  database: litellm
+  secret:
+    name: postgres
+    usernameKey: username
+    passwordKey: password
+  
+# Resources
+resources:
+  limits:
+    cpu: "1"
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# Auto-scaling (optional)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
