@@ -24,6 +24,9 @@ proxy_config:
   litellm_settings:
     drop_params: true
 
+environmentSecrets:
+  - litellm-salt-key
+
 extraEnvVars:
   - name: STORE_MODEL_IN_DB 
     value: "true"
@@ -34,7 +37,7 @@ db:
   endpoint: postgresql.postgresql.svc.cluster.local
   database: litellm
   secret:
-    name: postgres
+    name: postgres-credentials
     usernameKey: username
     passwordKey: password
   
