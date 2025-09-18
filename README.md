@@ -86,23 +86,22 @@ You can select a model in Claude Code in two ways:
     claude --model <model-id>
     ```
 
-## Store models in DB (optional)
+## Store models in DB (default)
 
-To persist the model registry in PostgreSQL, use the provided values file:
-
-```bash
-# Use this file alone, or combine with your base values
-helm upgrade --install -n litellm litellm \
-  oci://ghcr.io/berriai/litellm-helm \
-  -f values-store-model-in-db.yaml
-```
+By default, the included `values.yaml` persists the model registry in PostgreSQL.
 
 Prerequisites:
 - An existing PostgreSQL service at `postgresql.postgresql.svc.cluster.local`
 - Database `litellm` available
-- Kubernetes secret `postgres` with keys `username` and `password`
+- Kubernetes secret `postgres-credentials` with keys `username` and `password`
 
-This file sets `STORE_MODEL_IN_DB=true` and configures LiteLLM to use the existing PostgreSQL instance via the secret above.
+If you prefer file-based model configuration without DB storage, use:
+
+```bash
+helm upgrade --install -n litellm litellm \
+  oci://ghcr.io/berriai/litellm-helm \
+  -f values.with-models.yaml
+```
 
 ## Configuration Overview
 

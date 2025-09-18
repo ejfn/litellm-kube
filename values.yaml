@@ -19,50 +19,44 @@ proxy_config:
   # A list of models to preload into the LiteLLM proxy. Each entry should
   # use model_name and litellm_params format as documented at:
   # https://docs.litellm.ai/docs/proxy/configs
-  model_list:
-    # Anthropic Models - ensures Claude Code builtin models continue working
-    - model_name: claude-*
-      litellm_params:
-        model: anthropic/claude-*
-        api_key: os.environ/ANTHROPIC_API_KEY
-    # Google Gemini Models
-    - model_name: gemini/*
-      litellm_params:
-        model: gemini/*
-        api_key: os.environ/GOOGLE_API_KEY
-    # OpenAI Models
-    - model_name: openai/*
-      litellm_params:
-        model: openai/*
-        api_key: os.environ/OPENAI_API_KEY
-    # xAi Models
-    - model_name: xai/*
-      litellm_params:
-        model: xai/*
-        api_key: os.environ/XAI_API_KEY
-    # Wildcard to access any OpenRouter model
-    - model_name: openrouter/*
-      litellm_params:
-        model: openrouter/*
-        api_key: os.environ/OPENROUTER_API_KEY
+  model_list: []
 
   litellm_settings:
-    check_provider_endpoint: true # Enable checking provider endpoint for wildcard models
     drop_params: true
-        
-# A list of Kubernetes Secret objects that will be exported to the LiteLLM proxy
-#  pod as environment variables.  These secrets can then be referenced in the
-#  configuration file (or "litellm" ConfigMap) with `os.environ/<Env Var Name>`
-environmentSecrets:
-  - litellm-provider-keys
+    extra_spend_tag_headers:
+      - "x-custom-header"
 
+  general_settings:
+    user_header_mappings:
+      - header_name: X-OpenWebUI-User-Id
+        litellm_user_role: internal_user
+      - header_name: X-OpenWebUI-User-Email
+        litellm_user_role: customer    
+
+environmentSecrets:
+  - litellm-salt-key
+
+extraEnvVars:
+  - name: STORE_MODEL_IN_DB 
+    value: "true"
+
+db:
+  deployStandalone: false
+  useExisting: true
+  endpoint: postgresql.postgresql.svc.cluster.local
+  database: litellm
+  secret:
+    name: postgres-credentials
+    usernameKey: username
+    passwordKey: password
+  
 # Resources
 resources:
   limits:
-    cpu: 500m
-    memory: 768Mi
+    cpu: "1"
+    memory: 1Gi
   requests:
-    cpu: 250m
+    cpu: 500m
     memory: 512Mi
 
 # Auto-scaling (optional)

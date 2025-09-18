@@ -1,0 +1,73 @@
+# LiteLLM Helm Chart Values
+# Configure your LiteLLM deployment here
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/berriai/litellm
+  tag: main-stable
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 4000
+
+ingress:
+  enabled: false
+
+proxy_config:
+  # A list of models to preload into the LiteLLM proxy. Each entry should
+  # use model_name and litellm_params format as documented at:
+  # https://docs.litellm.ai/docs/proxy/configs
+  model_list:
+    # Anthropic Models - ensures Claude Code builtin models continue working
+    - model_name: claude-*
+      litellm_params:
+        model: anthropic/claude-*
+        api_key: os.environ/ANTHROPIC_API_KEY
+    # Google Gemini Models
+    - model_name: gemini/*
+      litellm_params:
+        model: gemini/*
+        api_key: os.environ/GOOGLE_API_KEY
+    # OpenAI Models
+    - model_name: openai/*
+      litellm_params:
+        model: openai/*
+        api_key: os.environ/OPENAI_API_KEY
+    # xAi Models
+    - model_name: xai/*
+      litellm_params:
+        model: xai/*
+        api_key: os.environ/XAI_API_KEY
+    # Wildcard to access any OpenRouter model
+    - model_name: openrouter/*
+      litellm_params:
+        model: openrouter/*
+        api_key: os.environ/OPENROUTER_API_KEY
+
+  litellm_settings:
+    check_provider_endpoint: true # Enable checking provider endpoint for wildcard models
+    drop_params: true
+        
+# A list of Kubernetes Secret objects that will be exported to the LiteLLM proxy
+#  pod as environment variables.  These secrets can then be referenced in the
+#  configuration file (or "litellm" ConfigMap) with `os.environ/<Env Var Name>`
+environmentSecrets:
+  - litellm-provider-keys
+
+# Resources
+resources:
+  limits:
+    cpu: 500m
+    memory: 768Mi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+# Auto-scaling (optional)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
