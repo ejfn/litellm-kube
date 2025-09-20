@@ -1,115 +1,133 @@
 # LiteLLM Kubernetes Deployment
 
-This guide provides instructions for deploying the [Official LiteLLM Helm Chart](https://github.com/BerriAI/litellm/tree/main/deploy/charts/litellm-helm) to a Kubernetes cluster, using a NodePort for external access.
+This guide provides instructions for deploying the [Official LiteLLM Helm Chart](https://github.com/BerriAI/litellm/tree/main/deploy/charts/litellm-helm) to a Kubernetes cluster.
 
-## Getting Started
+## Deployment Options
 
-Follow these steps to deploy and configure your LiteLLM instance.
+LiteLLM supports two deployment configurations:
+
+### Option 1: Database-backed Model Storage (Default)
+- **Models**: Stored in PostgreSQL database, managed via UI
+- **Secrets needed**: `litellm-salt-key`, `postgres-credentials`
+- **Best for**: Production environments where you want to manage models dynamically
+
+### Option 2: File-based Model Configuration
+- **Models**: Pre-configured in YAML files
+- **Secrets needed**: `litellm-provider-keys` (API keys)
+- **Best for**: Static configurations with predefined models
+
+## Prerequisites
+
+- Kubernetes cluster
+- Helm 3.x
+- kubectl configured for your cluster
+
+**For Database-backed storage (default):**
+- PostgreSQL service at `postgresql.postgresql.svc.cluster.local`
+- Database `litellm` available
+- Kubernetes secret `postgres-credentials` with keys `username` and `password`
+
+## Quick Start (Database-backed)
 
 ### Step 1: Create Namespace
-
-First, create a dedicated namespace for your LiteLLM resources:
-
 ```bash
 kubectl create namespace litellm
 ```
 
-### Step 2: Create Provider API Key Secret
-
-Next, create a Kubernetes secret to securely store your API keys. This method keeps your keys out of version control.
-
+### Step 2: Create Salt Key Secret
 ```bash
-# Create a secret with the API keys for the providers you plan to use
-kubectl create secret generic litellm-provider-keys -n litellm \
-  --from-literal=ANTHROPIC_API_KEY="sk-ant-your-anthropic-key" \
-  --from-literal=OPENAI_API_KEY="sk-your-openai-key" \
-  --from-literal=GOOGLE_API_KEY="your-google-api-key" \
-  --from-literal=OPENROUTER_API_KEY="sk-or-your-openrouter-key"
+kubectl create secret generic litellm-salt-key -n litellm \
+  --from-literal=LITELLM_SALT_KEY="sk-1234"
 ```
-
-**Note**: The command above is an example; only include the `--from-literal` arguments for the providers you plan to use. Ensure your `values.yaml` references this secret via `environmentSecrets` and that your model configurations use `os.environ/API_KEY_NAME`.
+**Note**: Replace `sk-1234` with your actual salt key. See [LiteLLM documentation](https://docs.litellm.ai/docs/proxy/prod#8-set-litellm-salt-key).
 
 ### Step 3: Deploy LiteLLM
-
-With the namespace and secret in place, deploy LiteLLM using Helm and your custom `values.yaml`:
-
 ```bash
-# Deploy LiteLLM using Helm
+# Deploy LiteLLM with database-backed configuration
 helm upgrade --install -n litellm litellm oci://ghcr.io/berriai/litellm-helm -f values.yaml
 
-# Deploy the NodePort service for external access on port 30400
+# Deploy NodePort service for external access
 kubectl apply -f litellm-nodeport.yaml -n litellm
 ```
 
-**Note**: This setup uses a NodePort for local access. For production or custom domain setups, consider enabling ingress in `values.yaml` instead of using the NodePort service.
-
 ### Step 4: Access Your Deployment
 
-1.  **Get the Master Key**: Retrieve the auto-generated master key, which is required to log in to the dashboard.
+1. **Get the Master Key**:
+   ```bash
+   kubectl get secret litellm-masterkey -n litellm -o jsonpath='{.data.masterkey}' | base64 -d
+   ```
 
-    ```bash
-    # Get the auto-generated master key and decode it
-    kubectl get secret litellm-masterkey -n litellm -o jsonpath='{.data.masterkey}' | base64 -d
-    ```
+2. **Access the Dashboard**: http://localhost:30400/ui/
 
-2.  **Access the Dashboard**: Open the LiteLLM UI in your browser.
-    - **URL**: http://localhost:30400/ui/
+3. **Log In**: Use the master key from step 1
 
-3.  **Log In**: Use the master key obtained in the previous step to log in.
+4. **Manage Models**: Add models and API keys through the web UI
 
-4.  **Manage API Keys**: From the dashboard, you can generate and manage new API keys for different users or applications.
+## Alternative: File-based Configuration
 
-## Using LiteLLM with Claude Code
+If you prefer static model configuration:
 
-To use your LiteLLM proxy with Claude Code, configure the following environment variables:
-
+### Step 1-2: Create Namespace and Provider Secrets
 ```bash
-export ANTHROPIC_BASE_URL="http://localhost:30400"
-# Use an API key generated from the LiteLLM dashboard (not the master key)
-export ANTHROPIC_AUTH_TOKEN="sk-your-generated-api-key"
+kubectl create namespace litellm
+
+# Create provider API keys secret
+kubectl create secret generic litellm-provider-keys -n litellm \
+  --from-literal=ANTHROPIC_API_KEY="sk-ant-your-key" \
+  --from-literal=OPENAI_API_KEY="sk-your-key" \
+  --from-literal=GOOGLE_API_KEY="your-key"
 ```
 
-This configuration will route Claude Code's Anthropic API requests through the LiteLLM proxy.
-
-### Selecting a Model
-
-You can select a model in Claude Code in two ways:
-
--   **In a chat session**: Use the `/model` slash command.
-    ```
-    /model claude-sonnet-4-20250514
-    /model gemini/gemini-2.5-pro
-    /model openrouter/x-ai/grok-code-fast-1
-    ```
--   **At startup**: Use the `--model` flag.
-    ```bash
-    claude --model <model-id>
-    ```
-
-## Store models in DB (default)
-
-By default, the included `values.yaml` persists the model registry in PostgreSQL.
-
-Prerequisites:
-- An existing PostgreSQL service at `postgresql.postgresql.svc.cluster.local`
-- Database `litellm` available
-- Kubernetes secret `postgres-credentials` with keys `username` and `password`
-
-If you prefer file-based model configuration without DB storage, use:
-
+### Step 3: Deploy with File-based Configuration
 ```bash
 helm upgrade --install -n litellm litellm \
   oci://ghcr.io/berriai/litellm-helm \
   -f values.with-models.yaml
 ```
 
-## Configuration Overview
+**Note**: Only include API keys for providers you plan to use. Ensure your `values.with-models.yaml` references the secret via `environmentSecrets`.
 
-Your setup uses:
-- **Auto-generated master key** (stored in a Kubernetes secret)
-- **Model configuration** (defined in `values.yaml`)
-- **Provider API keys** (stored in a Kubernetes secret and referenced via `environmentSecrets`)
-- **Wildcard model support** (e.g., `openrouter/*`)
+## Using LiteLLM with Claude Code
+
+Configure Claude Code to use your LiteLLM proxy:
+
+```bash
+export ANTHROPIC_BASE_URL="http://localhost:30400"
+export ANTHROPIC_AUTH_TOKEN="sk-your-generated-api-key"  # From LiteLLM dashboard
+```
+
+### Model Selection
+
+**In chat**: Use the `/model` command
+```
+/model claude-sonnet-4-20250514
+/model gemini/gemini-2.5-pro
+/model openrouter/x-ai/grok-code-fast-1
+```
+
+**At startup**: Use the `--model` flag
+```bash
+claude --model <model-id>
+```
+
+## Network Access
+
+This setup uses NodePort (port 30400) for local development. For production:
+- Enable ingress in `values.yaml`
+- Remove or don't apply `litellm-nodeport.yaml`
+
+## Configuration Summary
+
+**Database-backed deployment uses:**
+- Auto-generated master key (Kubernetes secret)
+- PostgreSQL for model storage
+- Salt key for encryption
+- Dynamic model management via UI
+
+**File-based deployment uses:**
+- Static model configuration in YAML
+- Provider API keys in Kubernetes secrets
+- No database dependency
 
 ## Documentation
 
