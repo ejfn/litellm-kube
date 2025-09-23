@@ -23,16 +23,7 @@ proxy_config:
 
   litellm_settings:
     drop_params: true
-    extra_spend_tag_headers:
-      - "x-custom-header"
-
-  general_settings:
-    user_header_mappings:
-      - header_name: X-OpenWebUI-User-Id
-        litellm_user_role: internal_user
-      - header_name: X-OpenWebUI-User-Email
-        litellm_user_role: customer    
-
+    
 environmentSecrets:
   - litellm-salt-key
 
