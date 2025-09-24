@@ -2,55 +2,64 @@
 
 This guide provides instructions for deploying the [Official LiteLLM Helm Chart](https://github.com/BerriAI/litellm/tree/main/deploy/charts/litellm-helm) to a Kubernetes cluster.
 
-## Deployment Options
+## Overview
 
-LiteLLM supports two deployment configurations:
+This repository provides a Kubernetes deployment for LiteLLM with:
 
-### Option 1: Database-backed Model Storage (Default)
-- **Models**: Stored in PostgreSQL database, managed via UI
-- **Secrets needed**: `litellm-salt-key`, `postgres-credentials`
-- **Best for**: Production environments where you want to manage models dynamically
-
-### Option 2: File-based Model Configuration
-- **Models**: Pre-configured in YAML files
-- **Secrets needed**: `litellm-provider-keys` (API keys)
-- **Best for**: Static configurations with predefined models
+- **Models**: Pre-configured in `values.litellm.yaml` with wildcard support
+- **Database**: PostgreSQL connection (configurable)
+- **Secrets**: Provider API keys and database credentials
+- **Best for**: Production-ready deployments with flexible model access
 
 ## Prerequisites
 
 - Kubernetes cluster
 - Helm 3.x
 - kubectl configured for your cluster
+- Provider API keys for the providers you plan to use
+- PostgreSQL database instance (if using existing database connection)
 
-**For Database-backed storage (default):**
-- PostgreSQL service at `postgresql.postgresql.svc.cluster.local`
-- Database `litellm` available
-- Kubernetes secret `postgres-credentials` with keys `username` and `password`
-
-## Quick Start (Database-backed)
+## Quick Start
 
 ### Step 1: Create Namespace
 ```bash
 kubectl create namespace litellm
 ```
 
-### Step 2: Create Salt Key Secret
+### Step 2: Create Provider Secrets
 ```bash
-kubectl create secret generic litellm-salt-key -n litellm \
-  --from-literal=LITELLM_SALT_KEY="sk-1234"
+kubectl create secret generic litellm-provider-keys -n litellm \
+  --from-literal=ANTHROPIC_API_KEY="sk-ant-your-key" \
+  --from-literal=OPENAI_API_KEY="sk-your-key" \
+  --from-literal=GOOGLE_API_KEY="your-key" \
+  --from-literal=XAI_API_KEY="your-xai-key"
 ```
-**Note**: Replace `sk-1234` with your actual salt key. See [LiteLLM documentation](https://docs.litellm.ai/docs/proxy/prod#8-set-litellm-salt-key).
 
-### Step 3: Deploy LiteLLM
+**Note**: Only include API keys for providers you plan to use. 
+
+### Step 3: Create Database Secret
 ```bash
-# Deploy LiteLLM with database-backed configuration
-helm upgrade --install -n litellm litellm oci://ghcr.io/berriai/litellm-helm -f values.yaml
+kubectl create secret generic postgres-credentials -n litellm \
+  --from-literal=username="your-db-username" \
+  --from-literal=password="your-db-password"
+```
+
+**Note**: This step is required only when using an existing database connection (`db.useExisting: true` in `values.litellm.yaml`). The current configuration connects to PostgreSQL at `postgresql.postgresql.svc.cluster.local`. Ensure your PostgreSQL instance is running with a `litellm` database created.
+
+**Alternative**: To use a bundled PostgreSQL instance instead, modify `values.litellm.yaml`:
+- Set `db.deployStandalone: true`
+- Set `db.useExisting: false`
+- Skip this step (no database secret needed)
+
+### Step 4: Deploy LiteLLM
+```bash
+helm upgrade --install -n litellm litellm oci://ghcr.io/berriai/litellm-helm -f values.litellm.yaml
 
 # Deploy NodePort service for external access
-kubectl apply -f litellm-nodeport.yaml -n litellm
+kubectl apply -f nodeport.litellm.yaml -n litellm
 ```
 
-### Step 4: Access Your Deployment
+### Step 5: Access Your Deployment
 
 1. **Get the Master Key**:
    ```bash
@@ -61,31 +70,10 @@ kubectl apply -f litellm-nodeport.yaml -n litellm
 
 3. **Log In**: Use the master key from step 1
 
-4. **Manage Models**: Add models and API keys through the web UI
-
-## Alternative: File-based Configuration
-
-If you prefer static model configuration:
-
-### Step 1-2: Create Namespace and Provider Secrets
-```bash
-kubectl create namespace litellm
-
-# Create provider API keys secret
-kubectl create secret generic litellm-provider-keys -n litellm \
-  --from-literal=ANTHROPIC_API_KEY="sk-ant-your-key" \
-  --from-literal=OPENAI_API_KEY="sk-your-key" \
-  --from-literal=GOOGLE_API_KEY="your-key"
-```
-
-### Step 3: Deploy with File-based Configuration
-```bash
-helm upgrade --install -n litellm litellm \
-  oci://ghcr.io/berriai/litellm-helm \
-  -f values.with-models.yaml
-```
-
-**Note**: Only include API keys for providers you plan to use. Ensure your `values.with-models.yaml` references the secret via `environmentSecrets`.
+4. **Generate API Key**:
+   - Create a new user in the dashboard (recommended for security)
+   - Generate an API key for the new user
+   - Use this API key for Claude Code instead of the master key
 
 ## Using LiteLLM with Claude Code
 
@@ -101,8 +89,8 @@ export ANTHROPIC_AUTH_TOKEN="sk-your-generated-api-key"  # From LiteLLM dashboar
 **In chat**: Use the `/model` command
 ```
 /model claude-sonnet-4-20250514
-/model gemini/gemini-2.5-pro
-/model openrouter/x-ai/grok-code-fast-1
+/model gemini/gemini-2.0-pro
+/model xai/grok-beta
 ```
 
 **At startup**: Use the `--model` flag
@@ -112,25 +100,63 @@ claude --model <model-id>
 
 ## Network Access
 
-This setup uses NodePort (port 30400) for local development. For production:
-- Enable ingress in `values.yaml`
-- Remove or don't apply `litellm-nodeport.yaml`
+**Development**: This setup uses NodePort service on port 30400 for local access.
 
-## Configuration Summary
+**Production**: For production deployments:
+- Enable ingress in `values.litellm.yaml`
+- Configure proper TLS certificates
+- Remove or skip `nodeport.litellm.yaml`
 
-**Database-backed deployment uses:**
-- Auto-generated master key (Kubernetes secret)
-- PostgreSQL for model storage
-- Salt key for encryption
-- Dynamic model management via UI
+## Configuration
 
-**File-based deployment uses:**
-- Static model configuration in YAML
-- Provider API keys in Kubernetes secrets
-- No database dependency
+### Current Setup
+- **Models**: Pre-configured with wildcard patterns in `values.litellm.yaml`
+- **Providers**: Anthropic, Google, OpenAI, xAI (OpenRouter commented out)
+- **Database**: PostgreSQL connection to existing instance
+- **Secrets**:
+  - `litellm-provider-keys`: API keys for model providers
+  - `postgres-credentials`: Database username and password
+- **Scaling**: Single replica with optional auto-scaling
 
-## Documentation
+### Supported Models
+- `claude-*` and `anthropic/*` (Anthropic)
+- `gemini/*` (Google)
+- `openai/*` (OpenAI)
+- `xai/*` (xAI)
+- `openrouter/*` (uncomment in `values.litellm.yaml` to enable)
 
-- [LiteLLM Docs](https://docs.litellm.ai/)
-- [LiteLLM Proxy Configuration](https://docs.litellm.ai/docs/proxy/configs)
-- [Official LiteLLM Helm Chart](https://github.com/BerriAI/litellm/tree/main/deploy/charts/litellm-helm)
+## Open WebUI Integration
+
+Open WebUI provides a ChatGPT-like interface that works seamlessly with LiteLLM. Deploy both components for a complete AI chat solution.
+
+### Quick Deploy Open WebUI
+
+```bash
+# Add helm repo
+helm repo add open-webui https://helm.openwebui.com/
+helm repo update
+
+# Deploy Open WebUI
+helm upgrade --install open-webui open-webui/open-webui -n open-webui -f values.open-webui.yaml
+
+# Create NodePort service for external access
+kubectl apply -f nodeport.open-webui.yaml
+
+# Access at http://192.168.1.10:30401
+```
+
+### Open WebUI Configuration
+
+Open WebUI is pre-configured to use LiteLLM proxy at `http://litellm.litellm.svc:4000/v1` for OpenAI API compatibility.
+
+**Files**:
+- `values.open-webui.yaml` - Helm chart configuration
+- `nodeport.open-webui.yaml` - NodePort service for external access
+
+## Additional Resources
+
+- [LiteLLM Documentation](https://docs.litellm.ai/)
+- [Proxy Configuration Guide](https://docs.litellm.ai/docs/proxy/configs)
+- [Official Helm Chart Repository](https://github.com/BerriAI/litellm/tree/main/deploy/charts/litellm-helm)
+- [Model Provider Documentation](https://docs.litellm.ai/docs/providers)
+- [Open WebUI Helm Charts](https://github.com/open-webui/helm-charts/tree/main/charts/open-webui)

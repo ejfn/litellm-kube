@@ -25,6 +25,11 @@ proxy_config:
       litellm_params:
         model: anthropic/claude-*
         api_key: os.environ/ANTHROPIC_API_KEY
+    # Anthropic Models        
+    - model_name: anthropic/*
+      litellm_params:
+        model: anthropic/*
+        api_key: os.environ/ANTHROPIC_API_KEY        
     # Google Gemini Models
     - model_name: gemini/*
       litellm_params:
@@ -35,16 +40,17 @@ proxy_config:
       litellm_params:
         model: openai/*
         api_key: os.environ/OPENAI_API_KEY
+        max_completion_tokens: 128000
     # xAi Models
     - model_name: xai/*
       litellm_params:
         model: xai/*
         api_key: os.environ/XAI_API_KEY
     # Wildcard to access any OpenRouter model
-    - model_name: openrouter/*
-      litellm_params:
-        model: openrouter/*
-        api_key: os.environ/OPENROUTER_API_KEY
+    # - model_name: openrouter/*
+    #   litellm_params:
+    #     model: openrouter/*
+    #     api_key: os.environ/OPENROUTER_API_KEY
 
   litellm_settings:
     check_provider_endpoint: true # Enable checking provider endpoint for wildcard models
@@ -56,13 +62,27 @@ proxy_config:
 environmentSecrets:
   - litellm-provider-keys
 
+# Database configuration
+# Choose one:
+# - useExisting: true  -> connect to an existing PostgreSQL instance (keep deployStandalone=false)
+# - deployStandalone: true -> deploy a bundled PostgreSQL with this chart (set useExisting=false)
+db:
+  deployStandalone: false
+  useExisting: true
+  endpoint: postgresql.postgresql.svc.cluster.local
+  database: litellm
+  secret:
+    name: postgres-credentials
+    usernameKey: username
+    passwordKey: password
+
 # Resources
 resources:
   limits:
-    cpu: 500m
-    memory: 768Mi
+    cpu: "1"
+    memory: 1Gi
   requests:
-    cpu: 250m
+    cpu: 500m
     memory: 512Mi
 
 # Auto-scaling (optional)
@@ -71,3 +91,5 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 80
+
+
