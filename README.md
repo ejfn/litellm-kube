@@ -137,7 +137,7 @@ helm repo add open-webui https://helm.openwebui.com/
 helm repo update
 
 # Deploy Open WebUI
-helm upgrade --install open-webui open-webui/open-webui -n open-webui -f values.open-webui.yaml
+helm upgrade --install -n open-webui open-webui open-webui/open-webui -f values.open-webui.yaml
 
 # Create NodePort service for external access
 kubectl apply -f nodeport.open-webui.yaml
