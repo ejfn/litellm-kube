@@ -1,162 +1,114 @@
-# LiteLLM Kubernetes Deployment
+# LLM Stack Kubernetes Deployment
 
-This guide provides instructions for deploying the [Official LiteLLM Helm Chart](https://github.com/BerriAI/litellm/tree/main/deploy/charts/litellm-helm) to a Kubernetes cluster.
+This repository ships an umbrella Helm chart that deploys only LiteLLM by default. Open WebUI and Qdrant are optional add‑ons you can enable later.
 
-## Overview
+## Requirements
 
-This repository provides a Kubernetes deployment for LiteLLM with:
-
-- **Models**: Pre-configured in `values.litellm.yaml` with wildcard support
-- **Database**: PostgreSQL connection (configurable)
-- **Secrets**: Provider API keys and database credentials
-- **Best for**: Production-ready deployments with flexible model access
-
-## Prerequisites
-
-- Kubernetes cluster
-- Helm 3.x
+- A Kubernetes cluster
+- Helm 3.8+ (for OCI support)
 - kubectl configured for your cluster
-- Provider API keys for the providers you plan to use
-- PostgreSQL database instance (if using existing database connection)
 
-## Quick Start
+## Quick Start (defaults: LiteLLM only)
 
-### Step 1: Create Namespace
+1. Create a namespace
 ```bash
-kubectl create namespace litellm
+kubectl create namespace llm-stack
 ```
 
-### Step 2: Create Provider Secrets
+2. Add your provider API keys as a secret (include only the keys you use)
 ```bash
-kubectl create secret generic litellm-provider-keys -n litellm \
+kubectl create secret generic litellm-provider-keys -n llm-stack \
   --from-literal=ANTHROPIC_API_KEY="sk-ant-your-key" \
   --from-literal=OPENAI_API_KEY="sk-your-key" \
   --from-literal=GOOGLE_API_KEY="your-key" \
   --from-literal=XAI_API_KEY="your-xai-key"
 ```
 
-**Note**: Only include API keys for providers you plan to use. 
-
-### Step 3: Create Database Secret
+3. Install with default values (deploys LiteLLM only)
 ```bash
-kubectl create secret generic postgres-credentials -n litellm \
-  --from-literal=username="your-db-username" \
-  --from-literal=password="your-db-password"
+helm install my-llm-stack ./llm-stack -n llm-stack
 ```
 
-**Note**: This step is required only when using an existing database connection (`db.useExisting: true` in `values.litellm.yaml`). The current configuration connects to PostgreSQL at `postgresql.postgresql.svc.cluster.local`. Ensure your PostgreSQL instance is running with a `litellm` database created.
-
-**Alternative**: To use a bundled PostgreSQL instance instead, modify `values.litellm.yaml`:
-- Set `db.deployStandalone: true`
-- Set `db.useExisting: false`
-- Skip this step (no database secret needed)
-
-### Step 4: Deploy LiteLLM
+4. Get the LiteLLM master key
 ```bash
-helm upgrade --install -n litellm litellm oci://ghcr.io/berriai/litellm-helm -f values.litellm.yaml
-
-# Deploy NodePort service for external access
-kubectl apply -f nodeport.litellm.yaml -n litellm
+kubectl get secret litellm-masterkey -n llm-stack -o jsonpath='{.data.masterkey}' | base64 -d
 ```
 
-### Step 5: Access Your Deployment
+5. Access the LiteLLM UI
+- NodePort is enabled by default on port 30400
+- Open http://localhost:30400/ui/
 
-1. **Get the Master Key**:
-   ```bash
-   kubectl get secret litellm-masterkey -n litellm -o jsonpath='{.data.masterkey}' | base64 -d
-   ```
+6. Log in and create a user API key
+- Log in with the master key from step 4
+- Create a user and generate an API key for regular use
 
-2. **Access the Dashboard**: http://localhost:30400/ui/
-
-3. **Log In**: Use the master key from step 1
-
-4. **Generate API Key**:
-   - Create a new user in the dashboard (recommended for security)
-   - Generate an API key for the new user
-   - Use this API key for Claude Code instead of the master key
-
-## Using LiteLLM with Claude Code
-
-Configure Claude Code to use your LiteLLM proxy:
+## Use with Claude Code (example)
 
 ```bash
 export ANTHROPIC_BASE_URL="http://localhost:30400"
 export ANTHROPIC_AUTH_TOKEN="sk-your-generated-api-key"  # From LiteLLM dashboard
 ```
 
-### Model Selection
+## Optional: Enable extras (Open WebUI, Qdrant)
 
-**In chat**: Use the `/model` command
-```
-/model claude-sonnet-4-20250514
-/model gemini/gemini-2.0-pro
-/model xai/grok-beta
+1) Create custom-values.yaml with the components you want:
+```yaml
+# custom-values.yaml
+open-webui:
+  enabled: true
+  nodeport:
+    enabled: true
+    nodePort: 30401
+
+qdrant:
+  enabled: true
+  nodeport:
+    enabled: true
+    nodePort: 30402
 ```
 
-**At startup**: Use the `--model` flag
+2) Install with your overrides:
 ```bash
-claude --model <model-id>
+helm install my-llm-stack ./llm-stack -n llm-stack -f custom-values.yaml
 ```
 
-## Network Access
+## Defaults (values.yaml)
 
-**Development**: This setup uses NodePort service on port 30400 for local access.
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `litellm.enabled` | bool | `true` | Enable LiteLLM |
+| `litellm.nodeport.enabled` | bool | `true` | Enable NodePort for LiteLLM |
+| `litellm.nodeport.nodePort` | int | `30400` | NodePort for LiteLLM |
+| `open-webui.enabled` | bool | `false` | Enable Open WebUI |
+| `open-webui.nodeport.enabled` | bool | `false` | Enable NodePort for Open WebUI |
+| `open-webui.nodeport.nodePort` | int | `30401` | NodePort for Open WebUI |
+| `qdrant.enabled` | bool | `false` | Enable Qdrant |
+| `qdrant.nodeport.enabled` | bool | `false` | Enable NodePort for Qdrant |
+| `qdrant.nodeport.nodePort` | int | `30402` | NodePort for Qdrant HTTP |
 
-**Production**: For production deployments:
-- Enable ingress in `values.litellm.yaml`
-- Configure proper TLS certificates
-- Remove or skip `nodeport.litellm.yaml`
+## Notes
 
-## Configuration
+- LiteLLM deploys with a bundled PostgreSQL by default; no database setup is required for Quick Start.
+- For production, consider using Ingress with TLS and disabling NodePort.
 
-### Current Setup
-- **Models**: Pre-configured with wildcard patterns in `values.litellm.yaml`
-- **Providers**: Anthropic, Google, OpenAI, xAI (OpenRouter commented out)
-- **Database**: PostgreSQL connection to existing instance
-- **Secrets**:
-  - `litellm-provider-keys`: API keys for model providers
-  - `postgres-credentials`: Database username and password
-- **Scaling**: Single replica with optional auto-scaling
+## Chart structure
 
-### Supported Models
-- `claude-*` and `anthropic/*` (Anthropic)
-- `gemini/*` (Google)
-- `openai/*` (OpenAI)
-- `xai/*` (xAI)
-- `openrouter/*` (uncomment in `values.litellm.yaml` to enable)
-
-## Open WebUI Integration
-
-Open WebUI provides a ChatGPT-like interface that works seamlessly with LiteLLM. Deploy both components for a complete AI chat solution.
-
-### Quick Deploy Open WebUI
-
-```bash
-# Add helm repo
-helm repo add open-webui https://helm.openwebui.com/
-helm repo update
-
-# Deploy Open WebUI
-helm upgrade --install -n open-webui open-webui open-webui/open-webui -f values.open-webui.yaml
-
-# Create NodePort service for external access
-kubectl apply -f nodeport.open-webui.yaml
-
-# Access at http://192.168.1.10:30401
+```
+llm-stack/
+├── Chart.yaml
+├── values.yaml
+├── README.md
+└── templates/
+    ├── litellm-nodeport.yaml
+    ├── open-webui-nodeport.yaml
+    └── qdrant-nodeport.yaml
 ```
 
-### Open WebUI Configuration
+## References
 
-Open WebUI is pre-configured to use LiteLLM proxy at `http://litellm.litellm.svc:4000/v1` for OpenAI API compatibility.
-
-**Files**:
-- `values.open-webui.yaml` - Helm chart configuration
-- `nodeport.open-webui.yaml` - NodePort service for external access
-
-## Additional Resources
-
-- [LiteLLM Documentation](https://docs.litellm.ai/)
-- [Proxy Configuration Guide](https://docs.litellm.ai/docs/proxy/configs)
-- [Official Helm Chart Repository](https://github.com/BerriAI/litellm/tree/main/deploy/charts/litellm-helm)
-- [Model Provider Documentation](https://docs.litellm.ai/docs/providers)
-- [Open WebUI Helm Charts](https://github.com/open-webui/helm-charts/tree/main/charts/open-webui)
+- LiteLLM docs: https://docs.litellm.ai/
+- Proxy config: https://docs.litellm.ai/docs/proxy/configs
+- Official LiteLLM Helm chart: https://github.com/BerriAI/litellm/pkgs/container/litellm-helm
+- Model providers: https://docs.litellm.ai/docs/providers
+- Open WebUI charts: https://github.com/open-webui/helm-charts
+- Qdrant charts: https://github.com/qdrant/qdrant-helm

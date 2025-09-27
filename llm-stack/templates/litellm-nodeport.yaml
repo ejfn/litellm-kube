@@ -1,0 +1,21 @@
+{{- if and .Values.litellm.enabled .Values.litellm.nodeport.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-litellm-nodeport
+  labels:
+    app.kubernetes.io/name: litellm
+    app.kubernetes.io/instance: litellm
+    app.kubernetes.io/component: nodeport-service
+spec:
+  type: NodePort
+  ports:
+    - port: 4000
+      targetPort: 4000
+      nodePort: {{ .Values.litellm.nodeport.nodePort }}
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: litellm
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}

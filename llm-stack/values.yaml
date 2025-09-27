@@ -1,0 +1,97 @@
+# LLM Stack Umbrella Chart Values
+# Configure which components to deploy
+
+# LiteLLM Configuration
+litellm:
+  enabled: true
+  
+  # NodePort service configuration
+  nodeport:
+    enabled: true
+    nodePort: 30400
+
+  ingress:
+    enabled: false
+
+  proxy_config:
+    # A list of models to preload into the LiteLLM proxy
+    model_list: 
+      # Anthropic Models - ensures Claude Code builtin models continue working
+      - model_name: claude-*
+        litellm_params:
+          model: anthropic/claude-*
+          api_key: os.environ/ANTHROPIC_API_KEY
+      # Anthropic Models        
+      - model_name: anthropic/*
+        litellm_params:
+          model: anthropic/*
+          api_key: os.environ/ANTHROPIC_API_KEY        
+      # OpenAI Models
+      - model_name: openai/*
+        litellm_params:
+          model: openai/*
+          api_key: os.environ/OPENAI_API_KEY
+          max_completion_tokens: 128000
+
+    litellm_settings:
+      check_provider_endpoint: true
+      drop_params: true
+          
+  # Environment secrets for API keys
+  environmentSecrets:
+    - litellm-provider-keys
+
+  # Database configuration
+  db:
+    deployStandalone: true
+    useExisting: false
+    # endpoint: postgresql.postgresql.svc.cluster.local
+    # database: litellm
+    # secret:
+    #   name: litellm-db-credentials
+    #   usernameKey: username
+    #   passwordKey: password
+
+# Open WebUI Configuration
+open-webui:
+  enabled: false
+  
+  # NodePort service configuration
+  nodeport:
+    enabled: false
+    nodePort: 30401
+  
+  # Open WebUI specific values
+  ollama:
+    enabled: false
+
+  pipelines:
+    enabled: false
+
+  enableOpenaiApi: false
+
+  extraEnvVars: []
+  
+  extraEnvFrom: []
+
+  sso:
+    enabled: false
+    enableSignup: false
+
+
+# Qdrant Configuration
+qdrant:
+  enabled: false
+
+  # NodePort service configuration
+  nodeport:
+    enabled: false
+    nodePort: 30402
+
+# Global settings that can be shared across charts
+global:
+  # Common labels to apply to all resources
+  labels: {}
+  
+  # Common annotations to apply to all resources
+  annotations: {}
