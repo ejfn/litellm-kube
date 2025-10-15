@@ -49,6 +49,20 @@ export ANTHROPIC_BASE_URL="http://localhost:30400"
 export ANTHROPIC_AUTH_TOKEN="sk-your-generated-api-key"  # From LiteLLM dashboard
 ```
 
+### Optional: default Anthropic models
+
+You can set environment variables to control the default Anthropic models Claude Code uses for different tiers. This is useful when your LiteLLM proxy exposes specific model IDs or aliases.
+
+Example:
+
+```bash
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="xai/grok-code-fast-1"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="openai/gpt-5"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="gemini/gemini-2.5-pro"
+```
+
+If these are unset, Claude Code will fall back to its own defaults or prompt you to choose a model when needed.
+
 ## Optional: Enable extras (Open WebUI, Qdrant)
 
 1) Create custom-values.yaml with the components you want:
