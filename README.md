@@ -56,12 +56,20 @@ You can set environment variables to control the default Anthropic models Claude
 Example:
 
 ```bash
-export ANTHROPIC_DEFAULT_HAIKU_MODEL="xai/grok-code-fast-1"
-export ANTHROPIC_DEFAULT_SONNET_MODEL="openai/gpt-5"
-export ANTHROPIC_DEFAULT_OPUS_MODEL="gemini/gemini-2.5-pro"
+export ANTHROPIC_MODEL="xai/grok-4-fast-reasoning"
 ```
 
+You can also specify the model when launching Claude Code using the CLI flag:
+
+```bash
+claude --model xai/grok-4-fast-reasoning
+```
+
+During a session, switch models using the `/model` slash command, e.g., `/model sonnet` or `/model xai/grok-4-fast-reasoning`.
+
 If these are unset, Claude Code will fall back to its own defaults or prompt you to choose a model when needed.
+
+For more details, see the [Claude Code Model Configuration](https://docs.claude.com/en/docs/claude-code/model-config).
 
 ## Optional: Enable extras (Open WebUI, Qdrant)
 
