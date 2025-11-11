@@ -92,7 +92,7 @@ open-webui:
 
 # Qdrant Configuration
 qdrant:
-  enabled: true
+  enabled: false
 
   # Enable NodePort for external access
   nodeport:
