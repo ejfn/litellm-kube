@@ -22,7 +22,6 @@ litellm:
           vertex_credentials: "/var/run/secrets/gcp/credentials.json"
 
     litellm_settings:
-      check_provider_endpoint: true
       drop_params: true
 
   volumeMounts:
