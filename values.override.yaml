@@ -25,10 +25,6 @@ litellm:
       check_provider_endpoint: true
       drop_params: true
 
-  # Environment secrets for API keys
-  environmentSecrets:
-    - litellm-provider-keys
-
   volumeMounts:
     - name: gcp-credentials
       mountPath: /var/run/secrets/gcp

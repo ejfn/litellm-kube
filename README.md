@@ -1,32 +1,30 @@
-# LLM Stack Kubernetes Deployment
+# LiteLLM Vertex AI Kubernetes Deployment
 
-This repository ships an umbrella Helm chart that deploys only LiteLLM by default. Open WebUI and Qdrant are optional add‑ons you can enable later.
+This repository deploys LiteLLM configured to use Google Cloud Vertex AI models.
 
 ## Requirements
 
 - A Kubernetes cluster
 - Helm 3.8+ (for OCI support)
 - kubectl configured for your cluster
+- Google Cloud Application Default Credentials (ADC)
 
-## Quick Start (defaults: LiteLLM only)
+## Quick Start
 
 1. Create a namespace
 ```bash
 kubectl create namespace llm-stack
 ```
 
-2. Add your provider API keys as a secret (include only the keys you use)
+2. Create GCP credentials secret from your local ADC
 ```bash
-kubectl create secret generic litellm-provider-keys -n llm-stack \
-  --from-literal=ANTHROPIC_API_KEY="sk-ant-your-key" \
-  --from-literal=OPENAI_API_KEY="sk-your-key" \
-  --from-literal=GOOGLE_API_KEY="your-key" \
-  --from-literal=XAI_API_KEY="your-xai-key"
+kubectl create secret generic gcp-credentials -n llm-stack \
+  --from-file=credentials.json=$HOME/.config/gcloud/application_default_credentials.json
 ```
 
-3. Install with default values (deploys LiteLLM only)
+3. Install with Vertex AI configuration
 ```bash
-helm install my-llm-stack ./llm-stack -n llm-stack
+helm install my-llm-stack ./llm-stack -n llm-stack -f values.override.yaml
 ```
 
 4. Get the LiteLLM master key
@@ -35,102 +33,48 @@ kubectl get secret litellm-masterkey -n llm-stack -o jsonpath='{.data.masterkey}
 ```
 
 5. Access the LiteLLM UI
-- NodePort is enabled by default on port 30400
+- NodePort is enabled on port 30400
 - Open http://localhost:30400/ui/
 
 6. Log in and create a user API key
 - Log in with the master key from step 4
 - Create a user and generate an API key for regular use
 
-## Use with Claude Code (example)
+## Use with Claude Code
 
 ```bash
 export ANTHROPIC_BASE_URL="http://localhost:30400"
 export ANTHROPIC_AUTH_TOKEN="sk-your-generated-api-key"  # From LiteLLM dashboard
 ```
 
-### Optional: default Anthropic models
+### Using Vertex AI models
 
-You can set environment variables to control the default Anthropic models Claude Code uses for different tiers. This is useful when your LiteLLM proxy exposes specific model IDs or aliases.
-
-Example:
+The deployment is configured to proxy all models through Vertex AI:
 
 ```bash
-export ANTHROPIC_MODEL="xai/grok-4-fast-reasoning"
+claude --model claude-sonnet-4-5@20250929
+claude --model gemini-2.0-flash
 ```
 
-You can also specify the model when launching Claude Code using the CLI flag:
+During a session, switch models using the `/model` slash command.
 
-```bash
-claude --model xai/grok-4-fast-reasoning
-```
+## Configuration
 
-During a session, switch models using the `/model` slash command, e.g., `/model sonnet` or `/model xai/grok-4-fast-reasoning`.
+The deployment uses `values.override.yaml` which configures:
 
-If these are unset, Claude Code will fall back to its own defaults or prompt you to choose a model when needed.
-
-For more details, see the [Claude Code Model Configuration](https://docs.claude.com/en/docs/claude-code/model-config).
-
-## Optional: Enable extras (Open WebUI, Qdrant)
-
-1) Create custom-values.yaml with the components you want:
-```yaml
-# custom-values.yaml
-open-webui:
-  enabled: true
-  nodeport:
-    enabled: true
-    nodePort: 30401
-
-qdrant:
-  enabled: true
-  nodeport:
-    enabled: true
-    nodePort: 30402
-```
-
-2) Install with your overrides:
-```bash
-helm install my-llm-stack ./llm-stack -n llm-stack -f custom-values.yaml
-```
-
-## Defaults (values.yaml)
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `litellm.enabled` | bool | `true` | Enable LiteLLM |
-| `litellm.nodeport.enabled` | bool | `true` | Enable NodePort for LiteLLM |
-| `litellm.nodeport.nodePort` | int | `30400` | NodePort for LiteLLM |
-| `open-webui.enabled` | bool | `false` | Enable Open WebUI |
-| `open-webui.nodeport.enabled` | bool | `false` | Enable NodePort for Open WebUI |
-| `open-webui.nodeport.nodePort` | int | `30401` | NodePort for Open WebUI |
-| `qdrant.enabled` | bool | `false` | Enable Qdrant |
-| `qdrant.nodeport.enabled` | bool | `false` | Enable NodePort for Qdrant |
-| `qdrant.nodeport.nodePort` | int | `30402` | NodePort for Qdrant HTTP |
+- **Vertex AI Project**: `engineering-miyaai`
+- **Vertex AI Location**: `global`
+- **Credentials**: Mounted from Kubernetes secret at `/var/run/secrets/gcp/credentials.json`
+- **Database**: External PostgreSQL at `postgres-postgresql.postgres.svc.cluster.local`
 
 ## Notes
 
-- LiteLLM deploys with a bundled PostgreSQL by default; no database setup is required for Quick Start.
-- For production, consider using Ingress with TLS and disabling NodePort.
-
-## Chart structure
-
-```
-llm-stack/
-├── Chart.yaml
-├── values.yaml
-├── README.md
-└── templates/
-    ├── litellm-nodeport.yaml
-    ├── open-webui-nodeport.yaml
-    └── qdrant-nodeport.yaml
-```
+- LiteLLM uses an external PostgreSQL database (see `values.override.yaml`)
+- GCP credentials are mounted as a Kubernetes secret volume
+- For production, consider using Ingress with TLS instead of NodePort
 
 ## References
 
 - LiteLLM docs: https://docs.litellm.ai/
-- Proxy config: https://docs.litellm.ai/docs/proxy/configs
+- Vertex AI setup: https://docs.litellm.ai/docs/providers/vertex
 - Official LiteLLM Helm chart: https://github.com/BerriAI/litellm/pkgs/container/litellm-helm
-- Model providers: https://docs.litellm.ai/docs/providers
-- Open WebUI charts: https://github.com/open-webui/helm-charts
-- Qdrant charts: https://github.com/qdrant/qdrant-helm
