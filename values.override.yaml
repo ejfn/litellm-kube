@@ -5,55 +5,47 @@
 # LiteLLM Configuration
 litellm:
   enabled: true
-  
+
   # Enable NodePort for external access
   nodeport:
     enabled: true
     nodePort: 30400
-  
+
   # Custom proxy configuration
   proxy_config:
     model_list:
-      # Anthropic Models - ensures Claude Code builtin models continue working
-      - model_name: claude-*
+      - model_name: "*"
         litellm_params:
-          model: anthropic/claude-*
-          api_key: os.environ/ANTHROPIC_API_KEY
-      # Anthropic Models        
-      - model_name: anthropic/*
-        litellm_params:
-          model: anthropic/*
-          api_key: os.environ/ANTHROPIC_API_KEY        
-      # Google Gemini Models
-      - model_name: gemini/*
-        litellm_params:
-          model: gemini/*
-          api_key: os.environ/GOOGLE_API_KEY
-      # OpenAI Models
-      - model_name: openai/*
-        litellm_params:
-          model: openai/*
-          api_key: os.environ/OPENAI_API_KEY
-          max_completion_tokens: 128000
-      # xAi Models
-      - model_name: xai/*
-        litellm_params:
-          model: xai/*
-          api_key: os.environ/XAI_API_KEY       
+          model: "vertex_ai/*"
+          vertex_project: "engineering-miyaai"
+          vertex_location: "global"
+          vertex_credentials: "/var/run/secrets/gcp/credentials.json"
 
     litellm_settings:
       check_provider_endpoint: true
       drop_params: true
-          
+
   # Environment secrets for API keys
   environmentSecrets:
     - litellm-provider-keys
+
+  volumeMounts:
+    - name: gcp-credentials
+      mountPath: /var/run/secrets/gcp
+      readOnly: true
+  volumes:
+    - name: gcp-credentials
+      secret:
+        secretName: gcp-credentials
+        items:
+        - key: credentials.json
+          path: credentials.json
 
   # Database configuration
   db:
     deployStandalone: false
     useExisting: true
-    endpoint: postgresql.postgresql.svc.cluster.local
+    endpoint: postgres-postgresql.postgres.svc.cluster.local
     database: litellm
     secret:
       name: litellm-db-credentials
@@ -62,45 +54,8 @@ litellm:
 
 # Open WebUI Configuration
 open-webui:
-  enabled: true
-  
-  # Enable NodePort for external access
-  nodeport:
-    enabled: true
-    nodePort: 30401
-  
-  # Custom environment variables
-  extraEnvVars: 
-    - name: ENABLE_FORWARD_USER_INFO_HEADERS
-      value: "True"
-    - name: OPENID_PROVIDER_URL
-      value: "https://accounts.google.com/.well-known/openid-configuration"
-
-  extraEnvFrom:
-    - secretRef:
-        name: open-webui-db-credentials
-
-  # SSO Configuration
-  sso:
-    enabled: true
-    enableSignup: true
-    google:
-      enabled: true
-      clientId: "241824255096-g52vq0gh29q4qba5rupvmqvt8rmjhj5m.apps.googleusercontent.com"
-      clientExistingSecret: "google-oauth-secret"
-      clientExistingSecretKey: "client_secret"
+  enabled: false
 
 # Qdrant Configuration
 qdrant:
   enabled: false
-
-  # Enable NodePort for external access
-  nodeport:
-    enabled: true
-    nodePort: 30402
-  
-  # Custom persistence settings
-  persistence:
-    enabled: true
-    size: 10Gi
-  

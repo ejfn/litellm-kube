@@ -1,12 +1,12 @@
 dependencies:
 - name: litellm-helm
   repository: oci://ghcr.io/berriai
-  version: 0.1.812
+  version: 0.1.819
 - name: open-webui
   repository: https://helm.openwebui.com/
   version: 8.14.0
 - name: qdrant
   repository: https://qdrant.github.io/qdrant-helm
-  version: 1.15.5
-digest: sha256:4e85a0f3056166578f886306732f008f86e8d4cd50e9bde8ad83271c66d9a353
-generated: "2025-11-11T20:13:10.060432507+10:30"
+  version: 1.16.0
+digest: sha256:8c132b2ea28a87319f0bfc3fd86423c96fd45b9c445452bb883b78117c622111
+generated: "2025-11-21T11:39:08.758018809+10:30"
