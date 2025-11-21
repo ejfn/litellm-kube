@@ -24,6 +24,8 @@ litellm:
     litellm_settings:
       drop_params: true
 
+  environmentSecrets: []
+
   volumeMounts:
     - name: gcp-credentials
       mountPath: /var/run/secrets/gcp
