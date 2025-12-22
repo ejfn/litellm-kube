@@ -1,0 +1,35 @@
+# Open WebUI Standalone Configuration
+# Merged from llm-stack/values.yaml and values.override.yaml
+
+service:
+  type: NodePort
+  port: 8080
+  nodePort: 30401
+  # targetPort is 'http' in the chart
+
+ollama:
+  enabled: false
+
+pipelines:
+  enabled: false
+
+enableOpenaiApi: false
+
+extraEnvVars:
+  - name: ENABLE_FORWARD_USER_INFO_HEADERS
+    value: "True"
+  - name: OPENID_PROVIDER_URL
+    value: "https://accounts.google.com/.well-known/openid-configuration"
+
+extraEnvFrom:
+  - secretRef:
+      name: open-webui-db-credentials
+
+sso:
+  enabled: true
+  enableSignup: true
+  google:
+    enabled: true
+    clientId: "241824255096-g52vq0gh29q4qba5rupvmqvt8rmjhj5m.apps.googleusercontent.com"
+    clientExistingSecret: "google-oauth-secret"
+    clientExistingSecretKey: "client_secret"
