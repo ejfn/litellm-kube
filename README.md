@@ -19,3 +19,7 @@ cd open-webui
 
 Configuration values are stored in `open-webui/values.yaml`.
 secrets have been migrated to the `open-webui` namespace.
+
+## References
+
+- [Open WebUI Helm Charts](https://github.com/open-webui/helm-charts)

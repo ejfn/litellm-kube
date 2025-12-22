@@ -8,10 +8,13 @@ service:
   # targetPort is 'http' in the chart
 
 ollama:
-  enabled: true
+  enabled: false
   models:
     pull:
       - tinyllama
+  extraEnv:
+    - name: OLLAMA_NUM_THREADS
+      value: "2"
   persistentVolume:
     enabled: true
     size: 10Gi
